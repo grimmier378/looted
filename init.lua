@@ -2,8 +2,11 @@ local mq = require('mq')
 local imgui = require('ImGui')
 
 
+local mq = require('mq')
+local imgui = require('ImGui')
+
 local guiLoot = {
-	SHOW = false, -- false until after importing
+	SHOW = false,
 	openGUI = true,
 	shouldDrawGUI = false,
 	imported = false,
@@ -37,15 +40,16 @@ function MakeColorGradient(freq1, freq2, freq3, phase1, phase2, phase3, center, 
 end
 
 function guiLoot.GUI()
-	if not guiLoot.shouldDrawGUI then return end
+	if not guiLoot.openGUI then return end
 	local flags = ImGuiWindowFlags.MenuBar
-	--imgui.SetNextWindowSize(ImVec2(640, 240), guiLoot.resetPosition and ImGuiCond.Always or ImGuiCond.Once)
+	ImGui.SetNextWindowSize(260, 300, ImGuiCond.FirstUseEver)
 	imgui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImVec2(1, 0));
 
 	guiLoot.openGUI, guiLoot.shouldDrawGUI = ImGui.Begin('Looted Items##'..mq.TLO.Me.DisplayName(), guiLoot.openGUI, flags)
 	if not guiLoot.shouldDrawGUI then
 		imgui.End()
 		imgui.PopStyleVar()
+		guiLoot.openGUI = false
 		return
 	end
 
@@ -120,6 +124,7 @@ end
 local function bind(...)
 	local args = {...}
 	if args[1] == 'show' then
+		guiLoot.openGUI = not guiLoot.openGUI
 		guiLoot.shouldDrawGUI = not guiLoot.shouldDrawGUI
 	elseif args[1] == 'stop' then
 		guiLoot.SHOW = false
