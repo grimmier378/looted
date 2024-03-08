@@ -106,7 +106,6 @@ function StringTrim(s)
 end
 
 function guiLoot.EventLoot(line,who,what)
-	print(who.." : "..what)
 	if guiLoot.console ~= nil then
 		local item = mq.TLO.FindItem(what).ItemLink('CLICKABLE')() or what
 		if mq.TLO.Plugin('mq2linkdb').IsLoaded() then 
