@@ -40,7 +40,10 @@ local guiLoot = {
 	console = nil,
 	localEcho = false,
 	resetPosition = false,
+
+	winFlags = bit32.bor(ImGuiWindowFlags.MenuBar)
 }
+
 
 function MakeColorGradient(freq1, freq2, freq3, phase1, phase2, phase3, center, width, length)
 	local text = ''
@@ -65,18 +68,18 @@ end
 
 function guiLoot.GUI()
 	if not guiLoot.openGUI then return end
-	local flags = ImGuiWindowFlags.MenuBar
+
 	local windowName = 'Looted Items##'..mq.TLO.Me.DisplayName()
 
 	ImGui.SetNextWindowSize(260, 300, ImGuiCond.FirstUseEver)
-	imgui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImVec2(1, 0));
+	--imgui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImVec2(1, 0));
 
 	if guiLoot.imported then windowName = 'Looted Items *##Imported_'..mq.TLO.Me.DisplayName() end
-	guiLoot.openGUI, guiLoot.shouldDrawGUI = ImGui.Begin(windowName, guiLoot.openGUI, flags)
-	if not guiLoot.shouldDrawGUI then
+	guiLoot.openGUI, guiLoot.shouldDrawGUI = ImGui.Begin(windowName, guiLoot.openGUI, guiLoot.winFlags)
+	if not guiLoot.openGUI then
 		imgui.End()
-		imgui.PopStyleVar()
-		guiLoot.openGUI = false
+		--imgui.PopStyleVar()
+		guiLoot.shouldDrawGUI = false
 		return
 	end
 
@@ -117,7 +120,12 @@ function guiLoot.GUI()
 			imgui.Separator()
 
 			if imgui.MenuItem('Exit') then
-				guiLoot.SHOW = false
+				if not guiLoot.imported then
+					guiLoot.SHOW = false
+				else
+					guiLoot.openGUI = false
+					print("\ay[Looted]\ax Can Not Exit in Imported Mode.\ar Closing Window instead.\ax")
+				end
 			end
 
 			imgui.Separator()
@@ -145,7 +153,7 @@ function guiLoot.GUI()
 	contentSizeY = contentSizeY - footerHeight
 
 	guiLoot.console:Render(ImVec2(contentSizeX,0))
-	imgui.PopStyleVar(2)
+	imgui.PopStyleVar(1)
 
 	ImGui.End()
 end
