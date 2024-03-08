@@ -45,9 +45,9 @@ function guiLoot.GUI()
 	imgui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImVec2(1, 0));
 
 	guiLoot.openGUI, guiLoot.shouldDrawGUI = ImGui.Begin('Looted Items##'..mq.TLO.Me.DisplayName(), guiLoot.openGUI, flags)
-	imgui.PopStyleVar()
 	if not guiLoot.shouldDrawGUI then
 		imgui.End()
+		imgui.PopStyleVar()
 		return
 	end
 
@@ -96,7 +96,7 @@ function guiLoot.GUI()
 	contentSizeY = contentSizeY - footerHeight
 
 	guiLoot.console:Render(ImVec2(contentSizeX, contentSizeY))
-	imgui.PopStyleVar()
+	imgui.PopStyleVar(2)
 
 	ImGui.End()
 end
