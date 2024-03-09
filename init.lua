@@ -49,15 +49,15 @@ local lootTable = {}
 function guiLoot.ReportLoot()
 	if guiLoot.recordData then
 		guiLoot.console:AppendText("\ay[Looted]\at[Loot Report]")
-			for looter, lootData in pairs(lootTable) do
-				guiLoot.console:AppendText("\at[%s] \ax: ",looter)
-				for item, countData in pairs(lootData) do
-					local itemL = item
-					itemL =  mq.TLO.FindItem(item).ItemLink('CLICKABLE')() or item
-					if guiLoot.showLinks then itemL = mq.TLO.LinkDB(string.format("=%s",item))() or item end
-					guiLoot.console:AppendText("\am\t%s \ax:\ag %s",itemL, countData.Count)
-				end
+		for looter, lootData in pairs(lootTable) do
+			guiLoot.console:AppendText("\at[%s] \ax: ", looter)
+			for item, data in pairs(lootData) do
+				local itemName = item
+				local itemLink = data["Link"]
+				local itemCount = data["Count"]
+				guiLoot.console:AppendText("\am\t%s \ax: \ax(%d)", itemLink, itemCount)
 			end
+		end
 	else
 		guiLoot.recordData = true
 		guiLoot.console:AppendText("\ay[Looted]\ag[Recording Data Enabled]\ax Check back later for Data.")
@@ -134,9 +134,9 @@ function guiLoot.GUI()
 			if imgui.MenuItem('Close Console') then
 				guiLoot.openGUI = false
 			end
-			
+
 			imgui.Separator()
-			
+
 			if imgui.MenuItem('Exit') then
 				if not guiLoot.imported then
 					guiLoot.SHOW = false
@@ -177,28 +177,30 @@ function guiLoot.GUI()
 end
 
 function guiLoot.EventLoot(line, who, what)
+	local link = ''
 	if guiLoot.console ~= nil then
-		local item = mq.TLO.FindItem(what).ItemLink('CLICKABLE')() or what
+		link = mq.TLO.FindItem(what).ItemLink('CLICKABLE')() or what
 		if mq.TLO.Plugin('mq2linkdb').IsLoaded() and guiLoot.showLinks then
-			item = mq.TLO.FindItem(what).ItemLink('CLICKABLE')() or mq.TLO.LinkDB(string.format("=%s",what))()
+			link = mq.TLO.FindItem(what).ItemLink('CLICKABLE')() or mq.TLO.LinkDB(string.format("=%s",what))()
 		end
 		if guiLoot.hideNames then
 			if who ~= 'You' then who = mq.TLO.Spawn(string.format("%s",who)).Class.ShortName() end
 		end
-		local text = string.format('\ao[%s] \at%s \axLooted\am %s\ax', mq.TLO.Time(), who, item)
+		local text = string.format('\ao[%s] \at%s \axLooted %s', mq.TLO.Time(), who, link)
 		guiLoot.console:AppendText(text)
 		-- do we want to record loot data?
 		if not guiLoot.recordData then return end
-		local function addRule(Who, item)
-			if not lootTable[Who] then
-				lootTable[Who] = {}
+		local function addRule(who, what, link)
+			if not lootTable[who] then
+				lootTable[who] = {}
 			end
-			if not lootTable[Who][item] then
-				lootTable[Who][item] = {Count = 0}
+			if not lootTable[who][what] then
+				lootTable[who][what] = {Count = 0}
 			end
-			lootTable[Who][item].Count = lootTable[Who][item].Count + 1
+			lootTable[who][what]["Link"] = link
+			lootTable[who][what]["Count"] = (lootTable[who][what]["Count"] or 0) + 1
 		end
-		addRule(who, what)
+		addRule(who, what, link)
 	end
 end
 
