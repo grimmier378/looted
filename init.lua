@@ -74,10 +74,9 @@ local guiLoot = {
 	openGUI = false,
 	shouldDrawGUI = false,
 	imported = false,
-	hideNames = true,
+	hideNames = false,
 	showLinks = false,
 	linkdb = false,
-
 	importGUIElements = {},
 
 	---@type ConsoleWidget
@@ -89,7 +88,6 @@ local guiLoot = {
 	winFlags = bit32.bor(ImGuiWindowFlags.MenuBar)
 }
 local lootTable = {}
-
 ---@param names boolean
 ---@param links boolean
 ---@param record boolean
@@ -100,7 +98,6 @@ function guiLoot.GetSettings(names,links,record)
 		guiLoot.recordData = record
 	end
 end
-
 function guiLoot.loadLDB()
 	if guiLoot.linkdb then return end
 	local sWarn = "MQ2LinkDB not loaded, Can't lookup links.\n Attempting to Load MQ2LinkDB"
@@ -109,6 +106,7 @@ function guiLoot.loadLDB()
 	mq.cmdf("/plugin mq2linkdb noauto")
 	guiLoot.linkdb = mq.TLO.Plugin('mq2linkdb').IsLoaded()
 end
+
 -- draw any imported exported menus from outside this script.
 function drawImportedMenu()
 	for _, menuElement in ipairs(guiLoot.importGUIElements) do
@@ -136,9 +134,7 @@ end
 
 function guiLoot.GUI()
 	if not guiLoot.openGUI then return end
-
 	local windowName = 'Looted Items##'..mq.TLO.Me.DisplayName()
-
 	ImGui.SetNextWindowSize(260, 300, ImGuiCond.FirstUseEver)
 	--imgui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImVec2(1, 0));
 
@@ -150,13 +146,12 @@ function guiLoot.GUI()
 		guiLoot.shouldDrawGUI = false
 		return
 	end
-
 	-- Main menu bar
 	if imgui.BeginMenuBar() then
 		if imgui.BeginMenu('Options') then
 			_, guiLoot.console.autoScroll = imgui.MenuItem('Auto-scroll', nil, guiLoot.console.autoScroll)
-
 			local activated = false
+
 			activated, guiLoot.hideNames = imgui.MenuItem('Hide Names', activated, guiLoot.hideNames)
 			if activated then
 				if guiLoot.hideNames then
