@@ -149,10 +149,10 @@ function guiLoot.GUI()
 	-- Main menu bar
 	if imgui.BeginMenuBar() then
 		if imgui.BeginMenu('Options') then
-			_, guiLoot.console.autoScroll = imgui.MenuItem('Auto-scroll', nil, guiLoot.console.autoScroll)
 			local activated = false
+			activated, guiLoot.console.autoScroll = imgui.MenuItem('Auto-scroll', nil, guiLoot.console.autoScroll)
 
-			activated, guiLoot.hideNames = imgui.MenuItem('Hide Names', activated, guiLoot.hideNames)
+			activated, guiLoot.hideNames = imgui.MenuItem('Hide Names', nil, guiLoot.hideNames)
 			if activated then
 				if guiLoot.hideNames then
 					guiLoot.console:AppendText("\ay[Looted]\ax Hiding Names\ax")
@@ -161,9 +161,8 @@ function guiLoot.GUI()
 				end
 			end
 
-			local act = false
-			act, guiLoot.showLinks = imgui.MenuItem('Show Links', act, guiLoot.showLinks)
-			if act then
+			activated, guiLoot.showLinks = imgui.MenuItem('Show Links', nil, guiLoot.showLinks)
+			if activated then
 				guiLoot.linkdb = mq.TLO.Plugin('mq2linkdb').IsLoaded()
 				if guiLoot.showLinks then
 					if not guiLoot.linkdb then guiLoot.loadLDB() end
@@ -173,9 +172,8 @@ function guiLoot.GUI()
 				end
 			end
 
-			local active = false
-			active, guiLoot.recordData = imgui.MenuItem('Record Data', active, guiLoot.recordData)
-			if active then
+			activated, guiLoot.recordData = imgui.MenuItem('Record Data', nil, guiLoot.recordData)
+			if activated then
 				if guiLoot.recordData then
 					guiLoot.console:AppendText("\ay[Looted]\ax Recording Data\ax")
 				else
@@ -223,6 +221,21 @@ function guiLoot.GUI()
 		if guiLoot.imported and #guiLoot.importGUIElements > 0 then
 			drawImportedMenu()
 		end
+		if imgui.BeginMenu('Hide Corpse') then
+			if imgui.MenuItem('alwaysnpc') then
+				mq.cmd('/hidecorpse alwaysnpc')
+			end
+			if imgui.MenuItem('looted') then
+				mq.cmd('/hidecorpse looted')
+			end
+			if imgui.MenuItem('all') then
+				mq.cmd('/hidecorpse all')
+			end
+			if imgui.MenuItem('none') then
+				mq.cmd('/hidecorpse none')
+			end
+			imgui.EndMenu()
+		end
 		imgui.EndMenuBar()
 	end
 	-- End of menu bar
@@ -269,10 +282,10 @@ function guiLoot.RegisterActor()
 				if who ~= mq.TLO.Me() then who = mq.TLO.Spawn(string.format("%s", who)).Class.ShortName() else who = mq.TLO.Me.Class.ShortName() end
 			end
 
-			local text = string.format('\ao[%s] \at%s \ax%s %s', lootEntry.LootedAt, who, item.Action, link)
+			local text = string.format('\ao[%s] \at%s \ax%s %s (%s)', lootEntry.LootedAt, who, item.Action, link, lootEntry.ID)
 			guiLoot.console:AppendText(text)
 			-- do we want to record loot data?
-			if guiLoot.recordData then
+			if guiLoot.recordData and item.Action == 'Looted' then
 				addRule(who, what, link)
 			end
 		end
