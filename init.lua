@@ -99,7 +99,7 @@ function guiLoot.GetSettings(names,links,record)
 	end
 end
 function guiLoot.loadLDB()
-	if guiLoot.linkdb then return end
+	if guiLoot.linkdb or guiLoot.UseActors then return end
 	local sWarn = "MQ2LinkDB not loaded, Can't lookup links.\n Attempting to Load MQ2LinkDB"
 	guiLoot.console:AppendText(sWarn)
 	print(sWarn)
@@ -160,7 +160,7 @@ function guiLoot.GUI()
 					guiLoot.console:AppendText("\ay[Looted]\ax Showing Names\ax")
 				end
 			end
-
+		if not guiLoot.UseActors then
 			activated, guiLoot.showLinks = imgui.MenuItem('Show Links', nil, guiLoot.showLinks)
 			if activated then
 				guiLoot.linkdb = mq.TLO.Plugin('mq2linkdb').IsLoaded()
@@ -171,7 +171,7 @@ function guiLoot.GUI()
 					guiLoot.console:AppendText("\ay[Looted]\ax Link Lookup Disabled\ax")
 				end
 			end
-
+		end
 			activated, guiLoot.recordData = imgui.MenuItem('Record Data', nil, guiLoot.recordData)
 			if activated then
 				if guiLoot.recordData then
