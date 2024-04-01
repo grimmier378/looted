@@ -288,6 +288,10 @@ function guiLoot.RegisterActor()
 			if guiLoot.recordData and item.Action == 'Looted' then
 				addRule(who, what, link)
 			end
+			if guiLoot.recordData and item.Action == 'Destroyed' then
+				link = link ..' *Destroyed*'
+				addRule(who, what, link)
+			end
 		end
 	end)
 end
