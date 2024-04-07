@@ -269,14 +269,14 @@ function guiLoot.GUI()
 	--imgui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImVec2(1, 0));
 	ColorCount, StyleCount = DrawTheme(ThemeName)
 	if guiLoot.imported then windowName = 'Looted Items Local##Imported_'..mq.TLO.Me.DisplayName() end
-	guiLoot.openGUI, guiLoot.shouldDrawGUI = ImGui.Begin(windowName, guiLoot.openGUI, guiLoot.winFlags)
-	if not guiLoot.openGUI then
+	guiLoot.openGUI, show = ImGui.Begin(windowName, nil, guiLoot.winFlags)
+	if not show then
 		if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
 		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
 		imgui.End()
 		--imgui.PopStyleVar()
-		guiLoot.shouldDrawGUI = false
-		return
+		-- guiLoot.shouldDrawGUI = false
+		return show
 	end
 	ImGui.SetWindowFontScale(ZoomLvl)
 	-- Main menu bar
@@ -329,6 +329,7 @@ function guiLoot.GUI()
 
 			if imgui.MenuItem('Clear Console') then
 				guiLoot.console:Clear()
+				txtBuffer = {}
 			end
 
 			imgui.Separator()
@@ -376,30 +377,6 @@ function guiLoot.GUI()
 	end
 	-- End of menu bar
 
-	-- local footerHeight = imgui.GetStyle().ItemSpacing.y + imgui.GetFrameHeightWithSpacing()
-
-	-- if imgui.BeginPopupContextWindow() then
-	-- 	if imgui.Selectable('Clear') then
-	-- 		guiLoot.console:Clear()
-	-- 	end
-	-- 	imgui.EndPopup()
-	-- end
-
-	-- -- Reduce spacing so everything fits snugly together
-	-- imgui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImVec2(0, 0))
-	-- local contentSizeX, contentSizeY = imgui.GetContentRegionAvail()
-	-- contentSizeY = contentSizeY - footerHeight
-
-	-- guiLoot.console:Render(ImVec2(contentSizeX,0))
-	-- imgui.PopStyleVar(1)
-	-- if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-	-- if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
-	-- ImGui.SetWindowFontScale(1)
-	-- ImGui.End()
-
-	
-	
-	local scale = ZoomLvl
 	if zoom then
 		local footerHeight = 30
 		local contentSizeX, contentSizeY = ImGui.GetContentRegionAvail()
@@ -455,18 +432,33 @@ function guiLoot.GUI()
 		ImGui.EndTable()
 			
 		ImGui.EndChild()
-			
+		if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
+		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
+		ImGui.SetWindowFontScale(1)
+		ImGui.End()
 		else
-		local footerHeight = 30
-		local contentSizeX, contentSizeY = ImGui.GetContentRegionAvail()
-		contentSizeY = contentSizeY - footerHeight
-		guiLoot.console:Render(ImVec2(contentSizeX,contentSizeY))
+		local footerHeight = imgui.GetStyle().ItemSpacing.y + imgui.GetFrameHeightWithSpacing()
 
+		if imgui.BeginPopupContextWindow() then
+			if imgui.Selectable('Clear') then
+				guiLoot.console:Clear()
+				txtBuffer = {}
+			end
+			imgui.EndPopup()
+		end
+
+		-- Reduce spacing so everything fits snugly together
+		-- imgui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImVec2(0, 0))
+		local contentSizeX, contentSizeY = imgui.GetContentRegionAvail()
+		contentSizeY = contentSizeY - footerHeight
+
+		guiLoot.console:Render(ImVec2(contentSizeX,0))
+		-- imgui.PopStyleVar(1)
+		if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
+		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
+		ImGui.SetWindowFontScale(1)
+		ImGui.End()
 	end
-	if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-	if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
-	ImGui.SetWindowFontScale(1)
-	ImGui.End()
 end
 
 local function lootedConf_GUI(open)
@@ -620,7 +612,7 @@ function guiLoot.EventLoot(line, who, what)
 		end
 		local text = string.format('\ao[%s] \at%s \axLooted %s', mq.TLO.Time(), who, link)
 		guiLoot.console:AppendText(text)
-		local line = string.format('[%s] %s Looted %s', mq.TLO.Time(), who, link)
+		local line = string.format('[%s] %s Looted %s', mq.TLO.Time(), who, what)
 		local i = getNextID(txtBuffer)
 		-- ZOOM Console hack
 		if i > 1 then
