@@ -68,7 +68,25 @@
 local mq = require('mq')
 local imgui = require('ImGui')
 local actor = require('actors')
-
+local Icons = require('mq.ICONS')
+local theme, settings = {}, {}
+local script = 'Looted'
+local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
+local openConfigGUI, locked, zoom = false, false, false
+local themeFile = mq.configDir .. '/MyThemeZ.lua'
+local configFile = mq.configDir .. '/MyUI_Configs.lua'
+local ZoomLvl = 1.0
+local ThemeName = 'Default'
+local gIcon = Icons.MD_SETTINGS
+local txtBuffer = {}
+local defaults = {
+	LoadTheme = 'Default',
+	Scale = 1.0,
+	Zoom = false,
+	txtAutoScroll = true,
+	bottomPosition = 0,
+	lastScrollPos = 0,
+}
 local guiLoot = {
 	SHOW = false,
 	openGUI = false,
@@ -132,27 +150,144 @@ function guiLoot.ReportLoot()
 	end
 end
 
+
+---comment Check to see if the file we want to work on exists.
+---@param name string -- Full Path to file
+---@return boolean -- returns true if the file exists and false otherwise
+local function File_Exists(name)
+	local f=io.open(name,"r")
+	if f~=nil then io.close(f) return true else return false end
+end
+
+
+---comment Writes settings from the settings table passed to the setting file (full path required)
+-- Uses mq.pickle to serialize the table and write to file
+---@param file string -- File Name and path
+---@param settings table -- Table of settings to write
+local function writeSettings(file, settings)
+	mq.pickle(file, settings)
+end
+
+local function loadTheme()
+	if File_Exists(themeFile) then
+		theme = dofile(themeFile)
+		else
+		theme = require('themes')
+	end
+	ThemeName = theme.LoadTheme or 'notheme'
+end
+
+local function loadSettings()
+	local temp = {}
+	if not File_Exists(configFile) then
+		mq.pickle(configFile, defaults)
+		loadSettings()
+		else
+        
+		-- Load settings from the Lua config file
+		temp = {}
+		settings = dofile(configFile)
+		if not settings[script] then
+			settings[script] = {}
+		settings[script] = defaults end
+		temp = settings[script]
+	end
+    
+	loadTheme()
+    
+	if settings[script].locked == nil then
+		settings[script].locked = false
+	end
+    
+	if settings[script].Scale == nil then
+		settings[script].Scale = 1
+	end
+    
+	if settings[script].txtAutoScroll == nil then
+		settings[script].txtAutoScroll = true
+	end
+	
+	if settings[script].bottomPosition == nil then
+		settings[script].bottomPosition = 20
+	end
+	
+	if settings[script].lastScrollPos == nil then
+		settings[script].lastScrollPos = 20
+	end
+	
+	if settings[script].Zoom == nil then
+		settings[script].Zoom = false
+	end
+
+	if not settings[script].LoadTheme then
+		settings[script].LoadTheme = theme.LoadTheme
+	end
+    zoom = settings[script].Zoom
+	locked = settings[script].locked
+	ZoomLvl = settings[script].Scale
+	ThemeName = settings[script].LoadTheme
+    
+	writeSettings(configFile, settings)
+    
+	temp = settings[script]
+end
+---comment
+---@param themeName string -- name of the theme to load form table
+---@return integer, integer -- returns the new counter values 
+local function DrawTheme(themeName)
+	local StyleCounter = 0
+	local ColorCounter = 0
+	for tID, tData in pairs(theme.Theme) do
+		if tData.Name == themeName then
+			for pID, cData in pairs(theme.Theme[tID].Color) do
+				ImGui.PushStyleColor(pID, ImVec4(cData.Color[1], cData.Color[2], cData.Color[3], cData.Color[4]))
+				ColorCounter = ColorCounter + 1
+			end
+			if tData['Style'] ~= nil then
+				if next(tData['Style']) ~= nil then
+                    
+					for sID, sData in pairs (theme.Theme[tID].Style) do
+						if sData.Size ~= nil then
+							ImGui.PushStyleVar(sID, sData.Size)
+							StyleCounter = StyleCounter + 1
+							elseif sData.X ~= nil then
+							ImGui.PushStyleVar(sID, sData.X, sData.Y)
+							StyleCounter = StyleCounter + 1
+						end
+					end
+				end
+			end
+		end
+	end
+	return ColorCounter, StyleCounter
+end
+
 function guiLoot.GUI()
 	if not guiLoot.openGUI then return end
 	local windowName = 'Looted Items##'..mq.TLO.Me.DisplayName()
 	ImGui.SetNextWindowSize(260, 300, ImGuiCond.FirstUseEver)
 	--imgui.PushStyleVar(ImGuiStyleVar.WindowPadding, ImVec2(1, 0));
-
+	ColorCount, StyleCount = DrawTheme(ThemeName)
 	if guiLoot.imported then windowName = 'Looted Items Local##Imported_'..mq.TLO.Me.DisplayName() end
 	guiLoot.openGUI, guiLoot.shouldDrawGUI = ImGui.Begin(windowName, guiLoot.openGUI, guiLoot.winFlags)
 	if not guiLoot.openGUI then
+		if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
+		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
 		imgui.End()
 		--imgui.PopStyleVar()
 		guiLoot.shouldDrawGUI = false
 		return
 	end
+	ImGui.SetWindowFontScale(ZoomLvl)
 	-- Main menu bar
 	if imgui.BeginMenuBar() then
+		ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7)
 		if imgui.BeginMenu('Options') then
 			local activated = false
 			activated, guiLoot.console.autoScroll = imgui.MenuItem('Auto-scroll', nil, guiLoot.console.autoScroll)
-
+			activated, openConfigGUI = imgui.MenuItem('Config', nil, openConfigGUI)
 			activated, guiLoot.hideNames = imgui.MenuItem('Hide Names', nil, guiLoot.hideNames)
+			activated, zoom = imgui.MenuItem('Zoom', nil, zoom)
 			if activated then
 				if guiLoot.hideNames then
 					guiLoot.console:AppendText("\ay[Looted]\ax Hiding Names\ax")
@@ -237,27 +372,167 @@ function guiLoot.GUI()
 			imgui.EndMenu()
 		end
 		imgui.EndMenuBar()
+		ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
 	end
 	-- End of menu bar
 
-	local footerHeight = imgui.GetStyle().ItemSpacing.y + imgui.GetFrameHeightWithSpacing()
+	-- local footerHeight = imgui.GetStyle().ItemSpacing.y + imgui.GetFrameHeightWithSpacing()
 
-	if imgui.BeginPopupContextWindow() then
-		if imgui.Selectable('Clear') then
-			guiLoot.console:Clear()
+	-- if imgui.BeginPopupContextWindow() then
+	-- 	if imgui.Selectable('Clear') then
+	-- 		guiLoot.console:Clear()
+	-- 	end
+	-- 	imgui.EndPopup()
+	-- end
+
+	-- -- Reduce spacing so everything fits snugly together
+	-- imgui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImVec2(0, 0))
+	-- local contentSizeX, contentSizeY = imgui.GetContentRegionAvail()
+	-- contentSizeY = contentSizeY - footerHeight
+
+	-- guiLoot.console:Render(ImVec2(contentSizeX,0))
+	-- imgui.PopStyleVar(1)
+	-- if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
+	-- if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) end
+	-- ImGui.SetWindowFontScale(1)
+	-- ImGui.End()
+
+	
+	
+	local scale = ZoomLvl
+	if zoom then
+		local footerHeight = 30
+		local contentSizeX, contentSizeY = ImGui.GetContentRegionAvail()
+		contentSizeY = contentSizeY - footerHeight
+			
+		ImGui.BeginChild("ZoomScrollRegion##"..script, ImVec2(contentSizeX, contentSizeY), ImGuiWindowFlags.HorizontalScrollbar)
+		ImGui.BeginTable('##channelID_'..script, 1, bit32.bor(ImGuiTableFlags.NoBordersInBody, ImGuiTableFlags.RowBg))
+		ImGui.TableSetupColumn("##txt"..script, ImGuiTableColumnFlags.NoHeaderLabel)
+		--- draw rows ---
+			
+		ImGui.TableNextRow()
+		ImGui.TableSetColumnIndex(0)
+		ImGui.SetWindowFontScale(ZoomLvl)
+			
+		for line, data in pairs(txtBuffer) do
+			-- ImGui.PushStyleColor(ImGuiCol.Text, ImVec4(data.color[1], data.color[2], data.color[3], data.color[4]))
+			if ImGui.Selectable("##selectable" .. line, false, ImGuiSelectableFlags.None) then end
+			ImGui.SameLine()
+			ImGui.TextWrapped(data.Text)
+			if ImGui.IsItemHovered() and ImGui.IsKeyDown(ImGuiMod.Ctrl) and ImGui.IsKeyDown(ImGuiKey.C) then
+				ImGui.LogToClipboard()
+				ImGui.LogText(data.Text)
+				ImGui.LogFinish()
+			end
+			ImGui.TableNextRow()
+			ImGui.TableSetColumnIndex(0)
+			-- ImGui.PopStyleColor()
 		end
-		imgui.EndPopup()
+			
+		ImGui.SetWindowFontScale(1)
+			
+		--Scroll to the bottom if autoScroll is enabled
+		local autoScroll = settings[script].txtAutoScroll
+		if autoScroll then
+			ImGui.SetScrollHereY()
+			settings[script].bottomPosition = ImGui.GetCursorPosY()
+		end
+			
+		local bottomPosition = settings[script].bottomPosition or 0
+		-- Detect manual scroll
+		local lastScrollPos = settings[script].lastScrollPos or 0
+		local scrollPos = ImGui.GetScrollY()
+			
+		if scrollPos < lastScrollPos then
+			settings[script].txtAutoScroll = false  -- Turn off autoscroll if scrolled up manually
+			elseif scrollPos >= bottomPosition-(30 * ZoomLvl) then
+			settings[script].txtAutoScroll = true
+		end
+			
+		lastScrollPos = scrollPos
+		settings[script].lastScrollPos = lastScrollPos
+			
+		ImGui.EndTable()
+			
+		ImGui.EndChild()
+			
+		else
+		local footerHeight = 30
+		local contentSizeX, contentSizeY = ImGui.GetContentRegionAvail()
+		contentSizeY = contentSizeY - footerHeight
+		guiLoot.console:Render(ImVec2(contentSizeX,contentSizeY))
+
 	end
-
-	-- Reduce spacing so everything fits snugly together
-	imgui.PushStyleVar(ImGuiStyleVar.ItemSpacing, ImVec2(0, 0))
-	local contentSizeX, contentSizeY = imgui.GetContentRegionAvail()
-	contentSizeY = contentSizeY - footerHeight
-
-	guiLoot.console:Render(ImVec2(contentSizeX,0))
-	imgui.PopStyleVar(1)
-
+	if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
+	if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
+	ImGui.SetWindowFontScale(1)
 	ImGui.End()
+end
+
+local function lootedConf_GUI(open)
+	if not openConfigGUI then return end
+	ColorCountConf = 0
+	StyleCountConf = 0
+	ColorCountConf, StyleCountConf = DrawTheme(ThemeName)
+	open, openConfigGUI = ImGui.Begin("Looted Conf##"..script, open, bit32.bor(ImGuiWindowFlags.None, ImGuiWindowFlags.AlwaysAutoResize, ImGuiWindowFlags.NoCollapse))
+	ImGui.SetWindowFontScale(ZoomLvl)
+	if not openConfigGUI then
+		openConfigGUI = false
+		open = false
+		if StyleCountConf > 0 then ImGui.PopStyleVar(StyleCountConf) end
+		if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
+		ImGui.SetWindowFontScale(1)
+		ImGui.End()
+		return open
+	end
+	ImGui.SameLine()
+	ImGui.SeparatorText('Theme')
+	ImGui.Text("Cur Theme: %s", ThemeName)
+	-- Combo Box Load Theme
+    
+	if ImGui.BeginCombo("Load Theme##"..script, ThemeName) then
+		ImGui.SetWindowFontScale(ZoomLvl)
+		for k, data in pairs(theme.Theme) do
+			local isSelected = data.Name == ThemeName
+			if ImGui.Selectable(data.Name, isSelected) then
+				theme.LoadTheme = data.Name
+				ThemeName = theme.LoadTheme
+				settings[script].LoadTheme = ThemeName
+			end
+		end
+		ImGui.EndCombo()
+	end
+    
+	if ImGui.Button('Reload Theme File') then
+		loadTheme()
+	end
+	--------------------- Sliders ----------------------
+	ImGui.SeparatorText('Scaling')
+	-- Slider for adjusting zoom level
+	local tmpZoom = ZoomLvl
+	if ZoomLvl then
+		tmpZoom = ImGui.SliderFloat("Text Scale##"..script, tmpZoom, 0.5, 2.0)
+	end
+	if ZoomLvl ~= tmpZoom then
+		ZoomLvl = tmpZoom
+	end
+    
+    
+	ImGui.SeparatorText('Save and Close')
+    
+	if ImGui.Button('Save and Close##'..script) then
+		openConfigGUI = false
+		settings = dofile(configFile)
+		settings[script].Scale = ZoomLvl
+		settings[script].LoadTheme = ThemeName
+        
+		writeSettings(configFile,settings)
+	end
+	if StyleCountConf > 0 then ImGui.PopStyleVar(StyleCountConf) end
+	if ColorCountConf > 0 then ImGui.PopStyleColor(ColorCountConf) end
+	ImGui.SetWindowFontScale(1)
+	ImGui.End()
+    
 end
 
 local function addRule(who, what, link)
@@ -269,6 +544,20 @@ local function addRule(who, what, link)
 	end
 	lootTable[who][what]["Link"] = link
 	lootTable[who][what]["Count"] = (lootTable[who][what]["Count"] or 0) + 1
+end
+
+---comment -- Checks for the last ID number in the table passed. returns the NextID
+---@param table table -- the table we want to look up ID's in
+---@return number -- returns the NextID that doesn't exist in the table yet.
+local function getNextID(table)
+	local maxChannelId = 0
+	for channelId, _ in pairs(table) do
+		local numericId = tonumber(channelId)
+		if numericId and numericId > maxChannelId then
+			maxChannelId = numericId
+		end
+	end
+	return maxChannelId + 1
 end
 
 function guiLoot.RegisterActor()
@@ -284,6 +573,25 @@ function guiLoot.RegisterActor()
 
 			local text = string.format('\ao[%s] \at%s \ax%s %s (%s)', lootEntry.LootedAt, who, item.Action, link, lootEntry.ID)
 			guiLoot.console:AppendText(text)
+			local line = string.format('[%s] %s %s %s CorpseID(%s)', lootEntry.LootedAt, who, item.Action, what, lootEntry.ID)
+			local i = getNextID(txtBuffer)
+			-- ZOOM Console hack
+			if i > 1 then
+				if txtBuffer[i-1].Text == '' then i = i-1 end
+			end
+			-- Add the new line to the buffer
+			txtBuffer[i] = {
+				Text = line
+			}
+			-- cleanup zoom buffer
+			-- Check if the buffer exceeds 1000 lines
+			local bufferLength = #txtBuffer
+			if bufferLength > 1000 then
+				-- Remove excess lines
+				for j = 1, bufferLength - 1000 do
+					table.remove(txtBuffer, 1)
+				end
+			end
 			-- do we want to record loot data?
 			if guiLoot.recordData and item.Action == 'Looted' then
 				addRule(who, what, link)
@@ -312,6 +620,25 @@ function guiLoot.EventLoot(line, who, what)
 		end
 		local text = string.format('\ao[%s] \at%s \axLooted %s', mq.TLO.Time(), who, link)
 		guiLoot.console:AppendText(text)
+		local line = string.format('[%s] %s Looted %s', mq.TLO.Time(), who, link)
+		local i = getNextID(txtBuffer)
+		-- ZOOM Console hack
+		if i > 1 then
+			if txtBuffer[i-1].Text == '' then i = i-1 end
+		end
+		-- Add the new line to the buffer
+		txtBuffer[i] = {
+			Text = line
+		}
+		-- cleanup zoom buffer
+		-- Check if the buffer exceeds 1000 lines
+		local bufferLength = #txtBuffer
+		if bufferLength > 1000 then
+			-- Remove excess lines
+			for j = 1, bufferLength - 1000 do
+				table.remove(txtBuffer, 1)
+			end
+		end
 		-- do we want to record loot data?
 		if not guiLoot.recordData then return end
 		addRule(who, what, link)
@@ -351,7 +678,7 @@ local function init()
 	else
 		mq.imgui.init('lootItemsGUI', guiLoot.GUI)
 	end
-
+	mq.imgui.init('lootConfigGUI', lootedConf_GUI)
 	-- setup events
 	if guiLoot.UseActors then
 		guiLoot.RegisterActor()
@@ -367,6 +694,9 @@ local function init()
 			guiLoot.console = imgui.ConsoleWidget.new("Loot##Console")
 		end
 	end
+
+	-- load settings
+	loadSettings()
 end
 
 local args = {...}
@@ -389,9 +719,22 @@ local function checkArgs(args)
 	echo = echo .. "\ay[Looted]\ax /looted report \t\t\atReports loot Data or Enables recording of data if not already.\n\ax"
 	echo = echo .. "\ay[Looted]\ax /looted clear  \t\t\atClears Recorded Data.\n\ax"
 	echo = echo .. "\ay[Looted]\ax /looted hidenames  \t\atHides names and shows Class instead.\n\ax"
-	echo = echo .. "\ay[Looted]\ax /looted stop   \t\t\atExits script.\n\ax"
+	echo = echo .. "\ay[Looted]\ax /looted stop   \t\t\atExits script.\ax"
 	print(echo)
 	guiLoot.console:AppendText(echo)
+	
+	local i = getNextID(txtBuffer)
+	-- ZOOM Console hack
+	if i > 1 then
+		if txtBuffer[i-1].Text == '' then i = i-1 end
+	end
+	-- Add the new line to the buffer
+	txtBuffer[i] = {
+		Text = "Looted Loaded \n/looted show \t Toggles the GUI\n /looted report \tReports loot Data or Enables recording of data if not already."
+	}
+	txtBuffer[i+1] = {
+		Text = "/looted clear  \tClears Recorded Data.\n/looted hidenames  \tHides names and shows Class instead.\n/looted stop   \tExits script."
+	}
 end
 
 local function loop()
