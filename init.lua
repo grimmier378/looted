@@ -87,6 +87,7 @@ local defaults = {
 	bottomPosition = 0,
 	lastScrollPos = 0,
 }
+
 local guiLoot = {
 	SHOW = false,
 	openGUI = false,
@@ -105,7 +106,9 @@ local guiLoot = {
 	UseActors = true,
 	winFlags = bit32.bor(ImGuiWindowFlags.MenuBar)
 }
+
 local lootTable = {}
+
 ---@param names boolean
 ---@param links boolean
 ---@param record boolean
@@ -116,6 +119,7 @@ function guiLoot.GetSettings(names,links,record)
 		guiLoot.recordData = record
 	end
 end
+
 function guiLoot.loadLDB()
 	if guiLoot.linkdb or guiLoot.UseActors then return end
 	local sWarn = "MQ2LinkDB not loaded, Can't lookup links.\n Attempting to Load MQ2LinkDB"
@@ -126,7 +130,7 @@ function guiLoot.loadLDB()
 end
 
 -- draw any imported exported menus from outside this script.
-function drawImportedMenu()
+local function drawImportedMenu()
 	for _, menuElement in ipairs(guiLoot.importGUIElements) do
 		menuElement()
 	end
@@ -564,8 +568,13 @@ function guiLoot.RegisterActor()
 			end
 
 			local text = string.format('\ao[%s] \at%s \ax%s %s (%s)', lootEntry.LootedAt, who, item.Action, link, lootEntry.ID)
+			if item.Action == 'Destroyed' then
+				text = string.format('\ao[%s] \at%s \ar%s \ax%s \ax(%s)', lootEntry.LootedAt, who, string.upper(item.Action), link, lootEntry.ID)
+			elseif item.Action == 'Looted' then
+				text = string.format('\ao[%s] \at%s \ag%s \ax%s \ax(%s)', lootEntry.LootedAt, who, item.Action, link, lootEntry.ID)
+			end
 			guiLoot.console:AppendText(text)
-			local line = string.format('[%s] %s %s %s CorpseID(%s)', lootEntry.LootedAt, who, item.Action, what, lootEntry.ID)
+			local line = string.format('[%s] %s %s %s CorpseID (%s)', lootEntry.LootedAt, who, item.Action, what, lootEntry.ID)
 			local i = getNextID(txtBuffer)
 			-- ZOOM Console hack
 			if i > 1 then
@@ -612,7 +621,7 @@ function guiLoot.EventLoot(line, who, what)
 		end
 		local text = string.format('\ao[%s] \at%s \axLooted %s', mq.TLO.Time(), who, link)
 		guiLoot.console:AppendText(text)
-		local line = string.format('[%s] %s Looted %s', mq.TLO.Time(), who, what)
+		local zLine = string.format('[%s] %s Looted %s', mq.TLO.Time(), who, what)
 		local i = getNextID(txtBuffer)
 		-- ZOOM Console hack
 		if i > 1 then
@@ -620,7 +629,7 @@ function guiLoot.EventLoot(line, who, what)
 		end
 		-- Add the new line to the buffer
 		txtBuffer[i] = {
-			Text = line
+			Text = zLine
 		}
 		-- cleanup zoom buffer
 		-- Check if the buffer exceeds 1000 lines
