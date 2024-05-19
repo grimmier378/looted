@@ -140,6 +140,7 @@ end
 
 function guiLoot.ReportLoot()
 	if guiLoot.recordData then
+		showReport = true
 		guiLoot.console:AppendText("\ay[Looted]\at[Loot Report]")
 		for looter, lootData in pairs(lootTable) do
 			guiLoot.console:AppendText("\at[%s] \ax: ", looter)
@@ -483,9 +484,11 @@ local function lootedReport_GUI()
 		return showRepGUI
 	end
 	if showReport then
-	ImGui.BeginTable('##LootReport', 2, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY,ImGuiTableFlags.RowBg))
+	ImGui.BeginTable('##LootReport', 3, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY,ImGuiTableFlags.RowBg))
+	ImGui.TableSetupScrollFreeze(0, 1)
 	ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
 	ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
+	ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.WidthFixed, 50)
 	ImGui.TableHeadersRow()
 
 	for looter, lootData in pairs(lootTable) do
@@ -493,12 +496,21 @@ local function lootedReport_GUI()
 			local itemName = item
 			local itemLink = data["Link"]
 			local itemCount = data["Count"]
+			if string.find(itemName,"*") then
+				itemName = string.gsub(itemName, "*", ' -- Destroyed') 
+			end
 			ImGui.BeginGroup()
 			ImGui.TableNextRow()
 			ImGui.TableSetColumnIndex(0)
 			ImGui.Text(looter)
 			ImGui.TableSetColumnIndex(1)
-			ImGui.Text(item)
+			ImGui.Text(itemName)
+			if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
+				-- guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
+				mq.cmdf('/executelink %s', itemLink)
+			end
+			ImGui.TableSetColumnIndex(2)
+			ImGui.Text(itemCount)
 			ImGui.EndGroup()
 			if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
 				-- guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
