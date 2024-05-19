@@ -21,3 +21,6 @@ Or you can Import into another lua.
 2. local guiLoot = require('looted')
 3. guiLoot.imported = true
 4. guiLoot.shouldDrawGUI = true|false to show or hide window.
+
+
+![looted_Report](https://github.com/grimmier378/looted/assets/124466615/cb45adb9-361a-48d9-b27f-5542aa06c00b)
