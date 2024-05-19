@@ -483,42 +483,96 @@ local function lootedReport_GUI()
 		ImGui.End()
 		return showRepGUI
 	end
+	if not openRepGUI then
+		if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
+		if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+		ImGui.End()
+		showReport = false
+		return
+	end
 	if showReport then
-	ImGui.BeginTable('##LootReport', 3, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY,ImGuiTableFlags.RowBg))
-	ImGui.TableSetupScrollFreeze(0, 1)
-	ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
-	ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
-	ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.WidthFixed, 50)
-	ImGui.TableHeadersRow()
-
-	for looter, lootData in pairs(lootTable) do
-		for item, data in pairs(lootData) do
-			local itemName = item
-			local itemLink = data["Link"]
-			local itemCount = data["Count"]
-			if string.find(itemName,"*") then
-				itemName = string.gsub(itemName, "*", ' -- Destroyed') 
-			end
-			ImGui.BeginGroup()
-			ImGui.TableNextRow()
-			ImGui.TableSetColumnIndex(0)
-			ImGui.Text(looter)
-			ImGui.TableSetColumnIndex(1)
-			ImGui.Text(itemName)
-			if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
-				-- guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
-				mq.cmdf('/executelink %s', itemLink)
-			end
-			ImGui.TableSetColumnIndex(2)
-			ImGui.Text(itemCount)
-			ImGui.EndGroup()
-			if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
-				-- guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
-				mq.cmdf('/executelink %s', itemLink)
+		ImGui.BeginTable('##LootReport', 3, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY, ImGuiTableFlags.RowBg))
+		ImGui.TableSetupScrollFreeze(0, 1)
+		ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
+		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
+		ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.WidthFixed, 50)
+		ImGui.TableHeadersRow()
+	
+		for looter, lootData in pairs(lootTable) do
+			for item, data in pairs(lootData) do
+				local itemName = item
+				local itemLink = data["Link"]
+				local itemCount = data["Count"]
+				if string.find(itemName, "*") then
+					itemName = string.gsub(itemName, "*", ' -- Destroyed') 
+				end
+	
+				ImGui.PushID(item)  -- Push a unique ID for each item
+	
+				ImGui.BeginGroup()
+				ImGui.TableNextRow()
+				ImGui.TableSetColumnIndex(0)
+				ImGui.Text(looter)
+				ImGui.TableSetColumnIndex(1)
+				ImGui.Text(itemName)
+				if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
+					mq.cmdf('/executelink %s', itemLink)
+				end
+				if guiLoot.imported and mq.TLO.Lua.Script('lootnscoot').Status.Equal('RUNNING')() then
+					if ImGui.BeginPopupContextItem(item) then
+						if string.find(item, "*") then
+							itemName = string.gsub(item, "*", '') 
+						end
+						ImGui.Text(itemName)
+						ImGui.Separator()
+						if ImGui.BeginMenu('Normal Item Settings') then
+							if ImGui.Selectable('Keep') then
+								mq.cmdf('/lootutils keep "%s"', itemName)
+							end
+							if ImGui.Selectable('Quest') then
+								mq.cmdf('/lootutils quest "%s"', itemName)
+							end
+							if ImGui.Selectable('Sell') then
+								mq.cmdf('/lootutils sell "%s"', itemName)
+							end
+							if ImGui.Selectable('Tribute') then
+								mq.cmdf('/lootutils tribute "%s"', itemName)
+							end
+							if ImGui.Selectable('Destroy') then
+								mq.cmdf('/lootutils destroy "%s"', itemName)
+							end
+							ImGui.EndMenu()
+						end
+						if ImGui.BeginMenu('Global Item Settings') then
+							if ImGui.Selectable('Global Keep') then
+								mq.cmdf('/lootutils globalitem keep "%s"', itemName)
+							end
+							if ImGui.Selectable('Global Quest') then
+								mq.cmdf('/lootutils globalitem quest "%s"', itemName)
+							end
+							if ImGui.Selectable('Global Sell') then
+								mq.cmdf('/lootutils globalitem sell "%s"', itemName)
+							end
+							if ImGui.Selectable('Global Tribute') then
+								mq.cmdf('/lootutils globalitem tribute "%s"', itemName)
+							end
+							if ImGui.Selectable('Global Destroy') then
+								mq.cmdf('/lootutils globalitem destroy "%s"', itemName)
+							end
+							ImGui.EndMenu()
+						end
+						ImGui.EndPopup()
+					end
+				end
+				ImGui.TableSetColumnIndex(2)
+				ImGui.Text(tostring(itemCount))
+				ImGui.EndGroup()
+				ImGui.PopID()  -- Pop the unique ID for each item
 			end
 		end
-	end
-	ImGui.EndTable()
+	
+		ImGui.EndTable()
+	
 	if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
 	if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
 	ImGui.End()
