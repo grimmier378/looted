@@ -491,7 +491,8 @@ local function lootedReport_GUI()
 		return
 	end
 	if showReport then
-		ImGui.BeginTable('##LootReport', 3, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY, ImGuiTableFlags.RowBg))
+		local sizeX, sizeY = ImGui.GetContentRegionAvail()
+		ImGui.BeginTable('##LootReport', 3, bit32.bor(ImGuiTableFlags.Borders,ImGuiTableFlags.ScrollY, ImGuiTableFlags.RowBg), ImVec2(sizeX, sizeY-10))
 		ImGui.TableSetupScrollFreeze(0, 1)
 		ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
 		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
@@ -578,6 +579,7 @@ local function lootedReport_GUI()
 	ImGui.End()
 end
 end
+
 local function lootedConf_GUI(open)
 	if not openConfigGUI then return end
 	ColorCountConf = 0
