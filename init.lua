@@ -72,6 +72,7 @@ local Icons = require('mq.ICONS')
 local theme, settings = {}, {}
 local script = 'Looted'
 local ColorCount, ColorCountConf, StyleCount, StyleCountConf = 0, 0, 0, 0
+local ColorCountRep, StyleCountRep = 0,0
 local openConfigGUI, locked, zoom = false, false, false
 local themeFile = mq.configDir .. '/MyThemeZ.lua'
 local configFile = mq.configDir .. '/MyUI_Configs.lua'
@@ -467,54 +468,50 @@ function guiLoot.GUI()
 		ImGui.End()
 	end
 
-	--- Report Window
-	if showReport then
-		local ColorCountRep, StyleCountRep = DrawTheme(ThemeName)
-		ImGui.SetNextWindowSize(300,200, ImGuiCond.Appearing)
-		local openRepGUI, showRepGUI = ImGui.Begin("Loot Report##"..script, showReport, bit32.bor( ImGuiWindowFlags.NoCollapse))
-		if not showRepGUI then
-			if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
-			if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
-			ImGui.End()
-			return showReport
-		end
-		if not openRepGUI then
-			showReport = false
-			if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
-			if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
-			ImGui.End()
-			return openRepGUI
-		end
-		ImGui.BeginTable('##LootReport', 2, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY,ImGuiTableFlags.RowBg))
-		ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
-		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
-		ImGui.TableHeadersRow()
+end
 
-		for looter, lootData in pairs(lootTable) do
-			for item, data in pairs(lootData) do
-				local itemName = item
-				local itemLink = data["Link"]
-				local itemCount = data["Count"]
-				ImGui.BeginGroup()
-				ImGui.TableNextRow()
-				ImGui.TableSetColumnIndex(0)
-				ImGui.Text(looter)
-				ImGui.TableSetColumnIndex(1)
-				ImGui.Text(item)
-				ImGui.EndGroup()
-				if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
-					-- guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
-					mq.cmdf('/executelink %s', itemLink)
-				end
-			end
-		end
-		ImGui.EndTable()
+local function lootedReport_GUI()
+--- Report Window
+	if not showReport then return end
+	ColorCountRep, StyleCountRep = DrawTheme(ThemeName)
+	ImGui.SetNextWindowSize(300,200, ImGuiCond.Appearing)
+	local openRepGUI, showRepGUI = ImGui.Begin("Loot Report##"..script, showReport, bit32.bor( ImGuiWindowFlags.NoCollapse))
+	if not showRepGUI then
 		if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
 		if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
 		ImGui.End()
+		return showRepGUI
 	end
-end
+	if showReport then
+	ImGui.BeginTable('##LootReport', 2, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY,ImGuiTableFlags.RowBg))
+	ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
+	ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
+	ImGui.TableHeadersRow()
 
+	for looter, lootData in pairs(lootTable) do
+		for item, data in pairs(lootData) do
+			local itemName = item
+			local itemLink = data["Link"]
+			local itemCount = data["Count"]
+			ImGui.BeginGroup()
+			ImGui.TableNextRow()
+			ImGui.TableSetColumnIndex(0)
+			ImGui.Text(looter)
+			ImGui.TableSetColumnIndex(1)
+			ImGui.Text(item)
+			ImGui.EndGroup()
+			if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
+				-- guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
+				mq.cmdf('/executelink %s', itemLink)
+			end
+		end
+	end
+	ImGui.EndTable()
+	if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
+	if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+	ImGui.End()
+end
+end
 local function lootedConf_GUI(open)
 	if not openConfigGUI then return end
 	ColorCountConf = 0
@@ -730,6 +727,7 @@ local function init()
 		mq.imgui.init('lootItemsGUI', guiLoot.GUI)
 	end
 	mq.imgui.init('lootConfigGUI', lootedConf_GUI)
+	mq.imgui.init('lootReportGui', lootedReport_GUI)
 	-- setup events
 	if guiLoot.UseActors then
 		guiLoot.RegisterActor()
