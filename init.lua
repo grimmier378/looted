@@ -509,8 +509,7 @@ local function lootedReport_GUI()
 				end
 	
 				ImGui.PushID(item)  -- Push a unique ID for each item
-	
-				ImGui.BeginGroup()
+
 				ImGui.TableNextRow()
 				ImGui.TableSetColumnIndex(0)
 				ImGui.Text(looter)
@@ -567,17 +566,17 @@ local function lootedReport_GUI()
 				end
 				ImGui.TableSetColumnIndex(2)
 				ImGui.Text(tostring(itemCount))
-				ImGui.EndGroup()
+
 				ImGui.PopID()  -- Pop the unique ID for each item
 			end
 		end
 	
 		ImGui.EndTable()
-	
-	if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
-	if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
-	ImGui.End()
-end
+		
+		if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
+		if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+		ImGui.End()
+	end
 end
 
 local function lootedConf_GUI(open)
