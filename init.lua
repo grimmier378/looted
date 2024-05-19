@@ -76,6 +76,7 @@ local openConfigGUI, locked, zoom = false, false, false
 local themeFile = mq.configDir .. '/MyThemeZ.lua'
 local configFile = mq.configDir .. '/MyUI_Configs.lua'
 local ZoomLvl = 1.0
+local showReport = false
 local ThemeName = 'Default'
 local gIcon = Icons.MD_SETTINGS
 local txtBuffer = {}
@@ -285,7 +286,7 @@ function guiLoot.GUI()
 	ImGui.SetWindowFontScale(ZoomLvl)
 	-- Main menu bar
 	if imgui.BeginMenuBar() then
-		ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7)
+		-- ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7)
 		if imgui.BeginMenu('Options') then
 			local activated = false
 			activated, guiLoot.console.autoScroll = imgui.MenuItem('Auto-scroll', nil, guiLoot.console.autoScroll)
@@ -323,6 +324,7 @@ function guiLoot.GUI()
 
 			if imgui.MenuItem('View Report') then
 				guiLoot.ReportLoot()
+				showReport = true
 			end
 
 			imgui.Separator()
@@ -377,7 +379,8 @@ function guiLoot.GUI()
 			imgui.EndMenu()
 		end
 		imgui.EndMenuBar()
-		ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
+
+		-- ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
 	end
 	-- End of menu bar
 
@@ -437,7 +440,7 @@ function guiLoot.GUI()
 			
 		ImGui.EndChild()
 		if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
+		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount)  end
 		ImGui.SetWindowFontScale(1)
 		ImGui.End()
 		else
@@ -459,8 +462,55 @@ function guiLoot.GUI()
 		guiLoot.console:Render(ImVec2(contentSizeX,0))
 		-- imgui.PopStyleVar(1)
 		if ColorCount > 0 then ImGui.PopStyleColor(ColorCount) end
-		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount) else ImGui.PopStyleVar(1) end
+		if StyleCount > 0 then ImGui.PopStyleVar(StyleCount)  end
 		ImGui.SetWindowFontScale(1)
+		ImGui.End()
+	end
+
+	--- Report Window
+	if showReport then
+		local ColorCountRep, StyleCountRep = DrawTheme(ThemeName)
+		ImGui.SetNextWindowSize(300,200, ImGuiCond.Appearing)
+		local openRepGUI, showRepGUI = ImGui.Begin("Loot Report##"..script, showReport, bit32.bor( ImGuiWindowFlags.NoCollapse))
+		if not showRepGUI then
+			if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
+			if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+			ImGui.End()
+			return showReport
+		end
+		if not openRepGUI then
+			showReport = false
+			if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
+			if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+			ImGui.End()
+			return openRepGUI
+		end
+		ImGui.BeginTable('##LootReport', 2, bit32.bor(ImGuiTableFlags.Borders, ImGuiTableFlags.ScrollY,ImGuiTableFlags.RowBg))
+		ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
+		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
+		ImGui.TableHeadersRow()
+
+		for looter, lootData in pairs(lootTable) do
+			for item, data in pairs(lootData) do
+				local itemName = item
+				local itemLink = data["Link"]
+				local itemCount = data["Count"]
+				ImGui.BeginGroup()
+				ImGui.TableNextRow()
+				ImGui.TableSetColumnIndex(0)
+				ImGui.Text(looter)
+				ImGui.TableSetColumnIndex(1)
+				ImGui.Text(item)
+				ImGui.EndGroup()
+				if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
+					guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
+					mq.cmdf('/executelink %s', itemLink)
+				end
+			end
+		end
+		ImGui.EndTable()
+		if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
+		if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
 		ImGui.End()
 	end
 end
