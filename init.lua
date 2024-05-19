@@ -504,9 +504,7 @@ local function lootedReport_GUI()
 				local itemName = item
 				local itemLink = data["Link"]
 				local itemCount = data["Count"]
-				if string.find(itemName, "*") then
-					itemName = string.gsub(itemName, "*", ' -- Destroyed') 
-				end
+
 	
 				ImGui.PushID(item)  -- Push a unique ID for each item
 
@@ -514,7 +512,14 @@ local function lootedReport_GUI()
 				ImGui.TableSetColumnIndex(0)
 				ImGui.Text(looter)
 				ImGui.TableSetColumnIndex(1)
-				ImGui.Text(itemName)
+				if string.find(itemName, "*") then
+					itemName = string.gsub(itemName, "*", "")
+					ImGui.Text(itemName)
+					ImGui.SameLine()
+					ImGui.TextColored(0.9, 0.4, 0.4, 0.8, Icons.MD_DELETE)
+				else
+					ImGui.Text(itemName)
+				end
 				if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
 					mq.cmdf('/executelink %s', itemLink)
 				end
