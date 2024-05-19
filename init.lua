@@ -285,7 +285,7 @@ function guiLoot.GUI()
 		-- guiLoot.shouldDrawGUI = false
 		return show
 	end
-	ImGui.SetWindowFontScale(ZoomLvl)
+	
 	-- Main menu bar
 	if imgui.BeginMenuBar() then
 		-- ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,7)
@@ -385,7 +385,7 @@ function guiLoot.GUI()
 		-- ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, 4,3)
 	end
 	-- End of menu bar
-
+	ImGui.SetWindowFontScale(ZoomLvl)
 	if zoom then
 		local footerHeight = 30
 		local contentSizeX, contentSizeY = ImGui.GetContentRegionAvail()
@@ -476,21 +476,25 @@ local function lootedReport_GUI()
 	if not showReport then return end
 	ColorCountRep, StyleCountRep = DrawTheme(ThemeName)
 	ImGui.SetNextWindowSize(300,200, ImGuiCond.Appearing)
+	
 	local openRepGUI, showRepGUI = ImGui.Begin("Loot Report##"..script, showReport, bit32.bor( ImGuiWindowFlags.NoCollapse))
 	if not showRepGUI then
 		if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
 		if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+		ImGui.SetWindowFontScale(1)
 		ImGui.End()
 		return showRepGUI
 	end
 	if not openRepGUI then
 		if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
 		if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+		ImGui.SetWindowFontScale(1)
 		ImGui.End()
 		showReport = false
 		return
 	end
 	if showReport then
+		ImGui.SetWindowFontScale(ZoomLvl)
 		local sizeX, sizeY = ImGui.GetContentRegionAvail()
 		ImGui.BeginTable('##LootReport', 3, bit32.bor(ImGuiTableFlags.Borders,ImGuiTableFlags.ScrollY, ImGuiTableFlags.RowBg), ImVec2(sizeX, sizeY-10))
 		ImGui.TableSetupScrollFreeze(0, 1)
@@ -506,12 +510,13 @@ local function lootedReport_GUI()
 				local itemCount = data["Count"]
 
 	
-				ImGui.PushID(item)  -- Push a unique ID for each item
+				ImGui.PushID(item)  
 
 				ImGui.TableNextRow()
 				ImGui.TableSetColumnIndex(0)
 				ImGui.Text(looter)
 				ImGui.TableSetColumnIndex(1)
+				ImGui.BeginGroup()
 				if string.find(itemName, "*") then
 					itemName = string.gsub(itemName, "*", "")
 					ImGui.Text(itemName)
@@ -520,6 +525,7 @@ local function lootedReport_GUI()
 				else
 					ImGui.Text(itemName)
 				end
+				ImGui.EndGroup()
 				if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
 					mq.cmdf('/executelink %s', itemLink)
 				end
@@ -572,7 +578,7 @@ local function lootedReport_GUI()
 				ImGui.TableSetColumnIndex(2)
 				ImGui.Text(tostring(itemCount))
 
-				ImGui.PopID()  -- Pop the unique ID for each item
+				ImGui.PopID() 
 			end
 		end
 	
@@ -580,6 +586,7 @@ local function lootedReport_GUI()
 		
 		if ColorCountRep > 0 then ImGui.PopStyleColor(ColorCountRep) end
 		if StyleCountRep > 0 then ImGui.PopStyleVar(StyleCountRep) end
+		ImGui.SetWindowFontScale(1)
 		ImGui.End()
 	end
 end
