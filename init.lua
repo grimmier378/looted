@@ -503,7 +503,7 @@ function guiLoot.GUI()
 				ImGui.Text(item)
 				ImGui.EndGroup()
 				if ImGui.IsItemHovered() and ImGui.IsMouseReleased(0) then
-					guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
+					-- guiLoot.console:AppendText("\ay[Looted]\ax %s \ax: \ax(%d)", itemLink, itemCount)
 					mq.cmdf('/executelink %s', itemLink)
 				end
 			end
