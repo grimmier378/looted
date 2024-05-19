@@ -23,4 +23,4 @@ Or you can Import into another lua.
 4. guiLoot.shouldDrawGUI = true|false to show or hide window.
 
 
-![looted_Report](https://github.com/grimmier378/looted/assets/124466615/cb45adb9-361a-48d9-b27f-5542aa06c00b)
+![looted_report](https://github.com/grimmier378/looted/assets/124466615/790a5377-dc11-4ee3-b8bc-f50a1173f089)
