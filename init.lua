@@ -108,8 +108,7 @@ local guiLoot = {
 	localEcho = false,
 	resetPosition = false,
 	recordData = true,
-	UseActors = false,
-	caller = 'self',
+	UseActors = true,
 	winFlags = bit32.bor(ImGuiWindowFlags.MenuBar)
 }
 
@@ -556,10 +555,15 @@ local function lootedReport_GUI()
 		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
 		ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.WidthFixed, 50)
 		ImGui.TableSetupColumn("Tagged", ImGuiTableColumnFlags.WidthFixed, 75)
-		
 		ImGui.TableHeadersRow()
-		if ImGui.BeginPopupContextItem('Tagged') then
+		if ImGui.BeginPopupContextItem() then
 			ImGui.SeparatorText("Tags:")
+			ImGui.TextColored(0.523, 0.797, 0.944, 1.000,globeIcon)
+			ImGui.SameLine()
+			ImGui.Text('Global Item')
+			ImGui.TextColored(0.898, 0.777, 0.000, 1.000,Icons.MD_STAR)
+			ImGui.SameLine()
+			ImGui.Text('Changed Rule')
 			ImGui.TextColored(0.860, 0.104, 0.104, 1.000, Icons.MD_DELETE)
 			ImGui.SameLine()
 			ImGui.Text("Destroy")
@@ -580,6 +584,7 @@ local function lootedReport_GUI()
 			ImGui.Text("Unknown")
 			ImGui.EndPopup()
 		end
+		local row = 1
 		for looter, lootData in pairs(lootTable) do
 			for item, data in pairs(lootData) do
 				local itemName = item
@@ -611,12 +616,7 @@ local function lootedReport_GUI()
 				end
 				-- lootnscoot context menu for changing item evaluation rule
 				if guiLoot.imported and mq.TLO.Lua.Script(guiLoot.caller).Status.Equal('RUNNING')() then
-					if ImGui.IsItemHovered() then
-						ImGui.BeginTooltip()
-						ImGui.Text("Left Click to open item link\nRight Click to change Item Evaluation Rule")
-						ImGui.EndTooltip()
-					end
-					if ImGui.BeginPopupContextItem(item) then
+					if ImGui.BeginPopupContextItem(rowID) then
 						if string.find(item, "*") then
 							itemName = string.gsub(item, "*", '') 
 						end
@@ -739,7 +739,7 @@ local function lootedReport_GUI()
 					evalRule(itemEval)
 				end
 				-- ImGui.Text(data['Eval'])
-
+				
 				ImGui.PopID() 
 				row = row + 1
 			end
