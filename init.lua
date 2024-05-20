@@ -117,12 +117,16 @@ local lootTable = {}
 ---@param names boolean
 ---@param links boolean
 ---@param record boolean
-function guiLoot.GetSettings(names,links,record)
-	if guiLoot.imported then
-		guiLoot.hideNames = names
-		guiLoot.showLinks = links
-		guiLoot.recordData = record
-	end
+---@param imported boolean
+---@param useactors boolean
+---@param caller string
+function guiLoot.GetSettings(names,links,record,imported,useactors,caller)
+	guiLoot.imported =imported
+	guiLoot.hideNames = names
+	guiLoot.showLinks = links
+	guiLoot.recordData = record
+	guiLoot.UseActors = useactors
+	guiLoot.caller = caller
 end
 
 function guiLoot.loadLDB()
@@ -549,14 +553,15 @@ local function lootedReport_GUI()
 	if showReport then
 		ImGui.SetWindowFontScale(ZoomLvl)
 		local sizeX, sizeY = ImGui.GetContentRegionAvail()
-		ImGui.BeginTable('##LootReport', 4, bit32.bor(ImGuiTableFlags.Borders,ImGuiTableFlags.ScrollY, ImGuiTableFlags.RowBg), ImVec2(sizeX, sizeY-10))
+		ImGui.BeginTable('##LootReport', 4, bit32.bor(ImGuiTableFlags.Borders,ImGuiTableFlags.ScrollY,ImGuiTableFlags.Resizable, ImGuiTableFlags.RowBg), ImVec2(sizeX, sizeY-10))
 		ImGui.TableSetupScrollFreeze(0, 1)
-		ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.WidthFixed, 100)
-		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.WidthStretch, 150)
-		ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.WidthFixed, 50)
-		ImGui.TableSetupColumn("Tagged", ImGuiTableColumnFlags.WidthFixed, 75)
+		ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.None, 100)
+		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.None,200)
+		ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.NoResize, 50)
+		ImGui.TableSetupColumn("Tagged", ImGuiTableColumnFlags.NoResize, 75)
 		ImGui.TableHeadersRow()
 		if ImGui.BeginPopupContextItem() then
+			ImGui.SetWindowFontScale(ZoomLvl)
 			ImGui.SeparatorText("Tags:")
 			ImGui.TextColored(0.523, 0.797, 0.944, 1.000,globeIcon)
 			ImGui.SameLine()
@@ -584,6 +589,7 @@ local function lootedReport_GUI()
 			ImGui.Text("Unknown")
 			ImGui.EndPopup()
 		end
+		ImGui.SetWindowFontScale(ZoomLvl)
 		local row = 1
 		for looter, lootData in pairs(lootTable) do
 			for item, data in pairs(lootData) do
@@ -617,6 +623,7 @@ local function lootedReport_GUI()
 				-- lootnscoot context menu for changing item evaluation rule
 				if guiLoot.imported and mq.TLO.Lua.Script(guiLoot.caller).Status.Equal('RUNNING')() then
 					if ImGui.BeginPopupContextItem(rowID) then
+						ImGui.SetWindowFontScale(ZoomLvl)
 						if string.find(item, "*") then
 							itemName = string.gsub(item, "*", '') 
 						end
@@ -624,6 +631,7 @@ local function lootedReport_GUI()
 						ImGui.Separator()
 						ImGui.PushStyleColor(ImGuiCol.Text, ImVec4(1, 1, 0, 0.75))
 						if ImGui.BeginMenu('Normal Item Settings##'..rowID) then
+							ImGui.SetWindowFontScale(ZoomLvl)
 							local tmpName = string.gsub(itemName, "*", "")
 							if ImGui.Selectable('Keep##'..rowID) then
 								mq.cmdf('/lootutils keep "%s"', tmpName)
@@ -655,6 +663,7 @@ local function lootedReport_GUI()
 						ImGui.PopStyleColor()
 						ImGui.PushStyleColor(ImGuiCol.Text, ImVec4(0.523, 0.797, 0.944, 1.000))
 						if ImGui.BeginMenu('Global Item Settings##'..rowID) then
+							ImGui.SetWindowFontScale(ZoomLvl)
 							local tmpName = string.gsub(itemName, "*", "")
 							if ImGui.Selectable('Global Keep##'..rowID) then
 								mq.cmdf('/lootutils globalitem keep "%s"', tmpName)
@@ -684,19 +693,23 @@ local function lootedReport_GUI()
 							ImGui.EndMenu()
 						end
 						ImGui.PopStyleColor()
+						ImGui.SetWindowFontScale(1)
 						ImGui.EndPopup()
 					end
 				else
 					if ImGui.IsItemHovered() then
 						ImGui.BeginTooltip()
+						ImGui.SetWindowFontScale(ZoomLvl)
 						ImGui.Text("Left Click to open item link")
 						ImGui.EndTooltip()
 					end
 				end
+				ImGui.SetWindowFontScale(ZoomLvl)
 				ImGui.TableSetColumnIndex(2)
 				ImGui.Text("\t%d", itemCount)
 				if ImGui.IsItemHovered() then
 					ImGui.BeginTooltip()
+					ImGui.SetWindowFontScale(ZoomLvl)
 					if string.find(itemEval, 'Unknown') then
 						ImGui.Text("%s Looted: %d",looter, itemCount)
 					else
@@ -710,6 +723,7 @@ local function lootedReport_GUI()
 					ImGui.TextColored(0.898, 0.777, 0.000, 1.000,Icons.MD_STAR)
 					if ImGui.IsItemHovered() then
 						ImGui.BeginTooltip()
+						ImGui.SetWindowFontScale(ZoomLvl)
 						ImGui.TextColored(0.6, 0.6, 0.6, 1,"Old Rule: %s",itemEval)
 						ImGui.TextColored(1.000, 0.914, 0.200, 1.000,"New Rule: %s", itemNewEval)
 						ImGui.EndTooltip()
@@ -719,6 +733,7 @@ local function lootedReport_GUI()
 						ImGui.TextColored(0.523, 0.797, 0.944, 1.000,globalNewIcon)
 						if ImGui.IsItemHovered() then
 							ImGui.BeginTooltip()
+							ImGui.SetWindowFontScale(ZoomLvl)
 							ImGui.Text("Global Rule")
 							ImGui.EndTooltip()
 						end
@@ -731,6 +746,7 @@ local function lootedReport_GUI()
 						ImGui.TextColored(0.523, 0.797, 0.944, 1.000,globeIcon)
 						if ImGui.IsItemHovered() then
 							ImGui.BeginTooltip()
+							ImGui.SetWindowFontScale(ZoomLvl)
 							ImGui.Text("Global Item")
 							ImGui.EndTooltip()
 						end
