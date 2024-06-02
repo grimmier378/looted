@@ -149,15 +149,18 @@ function guiLoot.ReportLoot()
 	if guiLoot.recordData then
 		showReport = true
 		guiLoot.console:AppendText("\ay[Looted]\at[Loot Report]")
-		for looter, lootData in pairs(lootTable) do
-			guiLoot.console:AppendText("\at[%s] \ax: ", looter)
-			for item, data in pairs(lootData) do
+		-- for looter, lootData in pairs(lootTable) do
+			-- guiLoot.console:AppendText("\at[%s] \ax: ", looter)
+			for item, data in pairs(lootTable) do
 				local itemName = item
+				local looter = data['Who']
 				local itemLink = data["Link"]
 				local itemCount = data["Count"]
-				guiLoot.console:AppendText("\ao\t%s \ax: \ax(%d)", itemLink, itemCount)
+				-- guiLoot.console:AppendText("\at[%s] \ax: ", looter)
+				guiLoot.console:AppendText("\ao%s \ax: \ax(%d)", itemLink, itemCount)
+				guiLoot.console:AppendText("\at\t[%s] \ax: ", looter)
 			end
-		end
+		-- end
 	else
 		guiLoot.recordData = true
 		guiLoot.console:AppendText("\ay[Looted]\ag[Recording Data Enabled]\ax Check back later for Data.")
@@ -172,6 +175,14 @@ local function File_Exists(name)
 	if f~=nil then io.close(f) return true else return false end
 end
 
+local function getSortedKeys(t)
+	local keys = {}
+	for k in pairs(t) do
+		table.insert(keys, k)
+	end
+	table.sort(keys)
+	return keys
+end
 
 ---comment Writes settings from the settings table passed to the setting file (full path required)
 -- Uses mq.pickle to serialize the table and write to file
@@ -555,8 +566,9 @@ local function lootedReport_GUI()
 		local sizeX, sizeY = ImGui.GetContentRegionAvail()
 		ImGui.BeginTable('##LootReport', 4, bit32.bor(ImGuiTableFlags.Borders,ImGuiTableFlags.ScrollY,ImGuiTableFlags.Resizable, ImGuiTableFlags.RowBg), ImVec2(sizeX, sizeY-10))
 		ImGui.TableSetupScrollFreeze(0, 1)
-		ImGui.TableSetupColumn("Looter", ImGuiTableColumnFlags.None, 100)
+		
 		ImGui.TableSetupColumn("Item", ImGuiTableColumnFlags.None,200)
+		ImGui.TableSetupColumn("Looter(s)", ImGuiTableColumnFlags.None, 100)
 		ImGui.TableSetupColumn("Count", ImGuiTableColumnFlags.NoResize, 50)
 		ImGui.TableSetupColumn("Tagged", ImGuiTableColumnFlags.NoResize, 75)
 		ImGui.TableHeadersRow()
@@ -591,9 +603,14 @@ local function lootedReport_GUI()
 		end
 		ImGui.SetWindowFontScale(ZoomLvl)
 		local row = 1
-		for looter, lootData in pairs(lootTable) do
-			for item, data in pairs(lootData) do
-				local itemName = item
+		-- for looter, lootData in pairs(lootTable) do
+
+			local sortedKeys = getSortedKeys(lootTable)
+			for _, key in ipairs(sortedKeys) do
+				local data = lootTable[key]
+				local item = key
+				local looter = data['Who']
+				local itemName = key
 				local itemLink = data["Link"]
 				local itemCount = data["Count"]
 				local itemEval = data["Eval"] or 'Unknown'
@@ -610,9 +627,8 @@ local function lootedReport_GUI()
 				ImGui.PushID(rowID)  
 			
 				ImGui.TableNextRow()
+
 				ImGui.TableSetColumnIndex(0)
-				ImGui.Text(looter)
-				ImGui.TableSetColumnIndex(1)
 				-- ImGui.BeginGroup()
 				if string.find(itemName, "*") then
 					itemName = string.gsub(itemName, "*", "")
@@ -635,27 +651,27 @@ local function lootedReport_GUI()
 							local tmpName = string.gsub(itemName, "*", "")
 							if ImGui.Selectable('Keep##'..rowID) then
 								mq.cmdf('/lootutils keep "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Keep'
+								lootTable[item]["NewEval"] = 'Keep'
 								changed = true
 							end
 							if ImGui.Selectable('Quest##'..rowID) then
 								mq.cmdf('/lootutils quest "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Quest'
+								lootTable[item]["NewEval"] = 'Quest'
 								changed = true
 							end
 							if ImGui.Selectable('Sell##'..rowID) then
 								mq.cmdf('/lootutils sell "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Sell'
+								lootTable[item]["NewEval"] = 'Sell'
 								changed = true
 							end
 							if ImGui.Selectable('Tribute##'..rowID) then
 								mq.cmdf('/lootutils tribute "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Tribute'
+								lootTable[item]["NewEval"] = 'Tribute'
 								changed = true
 							end
 							if ImGui.Selectable('Destroy##'..rowID) then
 								mq.cmdf('/lootutils destroy "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Destroy'
+								lootTable[item]["NewEval"] = 'Destroy'
 								changed = true
 							end
 							ImGui.EndMenu()
@@ -667,27 +683,27 @@ local function lootedReport_GUI()
 							local tmpName = string.gsub(itemName, "*", "")
 							if ImGui.Selectable('Global Keep##'..rowID) then
 								mq.cmdf('/lootutils globalitem keep "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Global Keep'
+								lootTable[item]["NewEval"] = 'Global Keep'
 								changed = true
 							end
 							if ImGui.Selectable('Global Quest##'..rowID) then
 								mq.cmdf('/lootutils globalitem quest "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Global Quest'
+								lootTable[item]["NewEval"] = 'Global Quest'
 								changed = true
 							end
 							if ImGui.Selectable('Global Sell##'..rowID) then
 								mq.cmdf('/lootutils globalitem sell "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Global Sell'
+								lootTable[item]["NewEval"] = 'Global Sell'
 								changed = true
 							end
 							if ImGui.Selectable('Global Tribute##'..rowID) then
 								mq.cmdf('/lootutils globalitem tribute "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Global Tribute'
+								lootTable[item]["NewEval"] = 'Global Tribute'
 								changed = true
 							end
 							if ImGui.Selectable('Global Destroy##'..rowID) then
 								mq.cmdf('/lootutils globalitem destroy "%s"', tmpName)
-								lootTable[looter][item]["NewEval"] = 'Global Destroy'
+								lootTable[item]["NewEval"] = 'Global Destroy'
 								changed = true
 							end
 							ImGui.EndMenu()
@@ -704,7 +720,9 @@ local function lootedReport_GUI()
 						ImGui.EndTooltip()
 					end
 				end
-				ImGui.SetWindowFontScale(ZoomLvl)
+				
+				ImGui.TableSetColumnIndex(1)
+				ImGui.Text(looter)
 				ImGui.TableSetColumnIndex(2)
 				ImGui.Text("\t%d", itemCount)
 				if ImGui.IsItemHovered() then
@@ -754,12 +772,13 @@ local function lootedReport_GUI()
 					end
 					evalRule(itemEval)
 				end
+				ImGui.SetWindowFontScale(1)
 				-- ImGui.Text(data['Eval'])
-				
+			
 				ImGui.PopID() 
 				row = row + 1
 			end
-		end
+		-- end
 	
 		ImGui.EndTable()
 		
@@ -837,15 +856,19 @@ local function lootedConf_GUI(open)
 end
 
 local function addRule(who, what ,link, eval)
-	if not lootTable[who] then
-		lootTable[who] = {}
+	if lootTable[what] == nil then
+		lootTable[what] = {}
+		lootTable[what] = {Count = 0, Who = who, Link = link, Eval = eval or 'Unknown'}
 	end
-	if not lootTable[who][what] then
-		lootTable[who][what] = {Count = 0}
+	local looters = lootTable[what]['Who']
+	if not string.find(looters, who) then
+		lootTable[what]['Who'] = looters .. ', ' .. who
 	end
-	lootTable[who][what]["Link"] = link
-	lootTable[who][what]["Eval"] = eval or 'Unknown'
-	lootTable[who][what]["Count"] = (lootTable[who][what]["Count"] or 0) + 1
+	lootTable[what]["Link"] = link
+	lootTable[what]["Eval"] = eval or 'Unknown'
+	lootTable[what]["Count"] = (lootTable[what]["Count"] or 0) + 1
+	
+
 end
 
 ---comment -- Checks for the last ID number in the table passed. returns the NextID
@@ -873,7 +896,14 @@ function guiLoot.RegisterActor()
 			if guiLoot.hideNames then
 				if who ~= mq.TLO.Me() then who = mq.TLO.Spawn(string.format("%s", who)).Class.ShortName() else who = mq.TLO.Me.Class.ShortName() end
 			end
-
+			if guiLoot.recordData and item.Action == 'Looted' then
+				addRule(who, what, link, eval)
+			end
+			if guiLoot.recordData and item.Action == 'Destroyed' then
+				what = what ..'*'
+				link = link ..' *Destroyed*'
+				addRule(who, what, link, eval)
+			end
 			local text = string.format('\ao[%s] \at%s \ax%s %s (%s)', lootEntry.LootedAt, who, item.Action, link, lootEntry.ID)
 			if item.Action == 'Destroyed' then
 				text = string.format('\ao[%s] \at%s \ar%s \ax%s \ax(%s)', lootEntry.LootedAt, who, string.upper(item.Action), link, lootEntry.ID)
@@ -901,14 +931,6 @@ function guiLoot.RegisterActor()
 				end
 			end
 			-- do we want to record loot data?
-			if guiLoot.recordData and item.Action == 'Looted' then
-				addRule(who, what, link, eval)
-			end
-			if guiLoot.recordData and item.Action == 'Destroyed' then
-				what = what ..'*'
-				link = link ..' *Destroyed*'
-				addRule(who, what, link, eval)
-			end
 		end
 	end)
 end
